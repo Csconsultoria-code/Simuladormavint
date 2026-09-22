@@ -1,0 +1,610 @@
+<title>Simulador Mavint</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#f4f5f0;
+    --surface:#ffffff;
+    --surface-2:#ebede4;
+    --border:#d7dace;
+    --text:#1d221c;
+    --text-muted:#636b5b;
+    --accent:#245a49;
+    --accent-strong:#173d31;
+    --accent-soft:#dbe9e0;
+    --accent-contrast:#f6faf5;
+    --warn:#9a5a1c;
+    --warn-soft:#f2e2cc;
+    --found:#2f7a3f;
+    --found-soft:#dcefdd;
+    --shadow: 0 1px 2px rgba(20,26,18,0.06), 0 8px 24px -16px rgba(20,26,18,0.25);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12160f;
+      --surface:#1b2117;
+      --surface-2:#222a1c;
+      --border:#333d2b;
+      --text:#eef1e7;
+      --text-muted:#a4ac97;
+      --accent:#63ab8d;
+      --accent-strong:#8bc7ac;
+      --accent-soft:#233229;
+      --accent-contrast:#0c1310;
+      --warn:#dba066;
+      --warn-soft:#382a1a;
+      --found:#7cc389;
+      --found-soft:#1f3122;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 10px 30px -18px rgba(0,0,0,0.7);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12160f;
+    --surface:#1b2117;
+    --surface-2:#222a1c;
+    --border:#333d2b;
+    --text:#eef1e7;
+    --text-muted:#a4ac97;
+    --accent:#63ab8d;
+    --accent-strong:#8bc7ac;
+    --accent-soft:#233229;
+    --accent-contrast:#0c1310;
+    --warn:#dba066;
+    --warn-soft:#382a1a;
+    --found:#7cc389;
+    --found-soft:#1f3122;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 10px 30px -18px rgba(0,0,0,0.7);
+    color-scheme: dark;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"IBM Plex Sans", system-ui, sans-serif;
+    padding-inline:18px;
+    padding-block:28px 40px;
+    max-width:1080px;
+    margin-inline:auto;
+  }
+  h1,h2,h3{ font-weight:600; text-wrap:balance; margin:0; }
+  .mono{ font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+
+  header.page{
+    display:flex; flex-direction:column; gap:6px;
+    margin-bottom:22px;
+  }
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11.5px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--accent-strong); font-weight:600;
+  }
+  header.page h1{ font-size:26px; }
+  header.page p{ margin:2px 0 0; color:var(--text-muted); font-size:14.5px; max-width:62ch; line-height:1.5; }
+
+  .banner{
+    background:var(--accent-soft);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13.5px;
+    color:var(--text);
+    line-height:1.55;
+    margin-bottom:22px;
+  }
+  .banner b{ color:var(--accent-strong); }
+
+  .scenario-bar{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px 16px;
+    box-shadow:var(--shadow);
+    display:flex; flex-wrap:wrap; align-items:center; gap:12px;
+    margin-bottom:20px;
+  }
+  .scenario-bar label{ font-size:13px; font-weight:600; color:var(--text-muted); white-space:nowrap; }
+  select#scenario{
+    flex:1 1 260px;
+    font-family:inherit;
+    font-size:14.5px;
+    color:var(--text);
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:9px 10px;
+  }
+  .step-note{ font-size:12.5px; color:var(--text-muted); flex-basis:100%; }
+
+  .board{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    align-items:start;
+  }
+  @media (max-width: 720px){
+    .board{ grid-template-columns:1fr; }
+  }
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .panel-head{
+    padding:14px 16px 12px;
+    border-bottom:1px solid var(--border);
+    background:var(--surface-2);
+  }
+  .panel-head .tag{
+    display:inline-block;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--accent-strong);
+    background:var(--accent-soft);
+    border-radius:5px;
+    padding:2px 7px;
+    margin-bottom:6px;
+  }
+  .panel-head h2{ font-size:16px; }
+  .panel-head p{ margin:4px 0 0; font-size:12.5px; color:var(--text-muted); line-height:1.45; }
+
+  .panel-body{ padding:14px 16px 16px; display:flex; flex-direction:column; gap:14px; }
+
+  .field label{
+    display:flex; align-items:baseline; justify-content:space-between;
+    font-size:12.5px; font-weight:600; color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .field label .count{
+    font-family:"IBM Plex Mono", monospace;
+    font-weight:500; font-size:11.5px;
+    color:var(--text-muted);
+  }
+  .field label .count.big{ color:var(--warn); font-weight:600; }
+  .field label .count.small{ color:var(--found); font-weight:600; }
+
+  .combo{
+    border:1px solid var(--border);
+    border-radius:9px;
+    background:var(--surface);
+    overflow:hidden;
+  }
+  .combo-search{
+    width:100%;
+    border:none;
+    border-bottom:1px solid var(--border);
+    background:var(--surface-2);
+    padding:9px 10px;
+    font-family:inherit;
+    font-size:13.5px;
+    color:var(--text);
+  }
+  .combo-search:focus{ outline:2px solid var(--accent); outline-offset:-2px; }
+  .combo-list{
+    max-height:168px;
+    overflow-y:auto;
+  }
+  .combo-list.short{ max-height:96px; }
+  .opt{
+    display:block;
+    width:100%;
+    text-align:left;
+    border:none;
+    background:transparent;
+    color:var(--text);
+    font-family:inherit;
+    font-size:13.5px;
+    padding:8px 10px;
+    cursor:pointer;
+    border-bottom:1px solid var(--border);
+  }
+  .opt:last-child{ border-bottom:none; }
+  .opt:hover{ background:var(--surface-2); }
+  .opt:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
+  .opt.sel{
+    background:var(--found-soft);
+    color:var(--found);
+    font-weight:600;
+  }
+  .opt.empty{ color:var(--text-muted); font-style:italic; cursor:default; }
+  .opt.empty:hover{ background:transparent; }
+
+  .panel-foot{
+    border-top:1px solid var(--border);
+    padding:11px 16px;
+    background:var(--surface-2);
+    font-size:12.5px;
+    color:var(--text-muted);
+    display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;
+  }
+  .panel-foot .val{ font-family:"IBM Plex Mono", monospace; color:var(--text); font-weight:600; }
+
+  .verdict{
+    margin-top:18px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    box-shadow:var(--shadow);
+    padding:14px 16px;
+    display:flex; gap:14px; align-items:center; flex-wrap:wrap;
+  }
+  .verdict .num{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:28px; font-weight:600; color:var(--accent-strong);
+    line-height:1;
+  }
+  .verdict .num small{ font-size:13px; font-weight:500; color:var(--text-muted); display:block; margin-top:3px; }
+  .verdict p{ margin:0; font-size:13.5px; color:var(--text-muted); line-height:1.5; flex:1 1 220px; }
+  .verdict p b{ color:var(--text); }
+
+  footer.note{
+    margin-top:22px;
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.6;
+    border-top:1px solid var(--border);
+    padding-top:14px;
+  }
+
+  .bling{
+    margin-top:34px;
+    padding-top:28px;
+    border-top:2px dashed var(--border);
+  }
+  .bling-head{ margin-bottom:16px; }
+  .bling-head h2{ font-size:19px; margin-top:4px; }
+  .bling-head p{ margin:5px 0 0; font-size:13px; color:var(--text-muted); max-width:64ch; line-height:1.5; }
+  .bling-cols{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+  }
+  @media (max-width: 720px){
+    .bling-cols{ grid-template-columns:1fr; }
+  }
+  .bling-col{
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px 16px 16px;
+    background:var(--surface);
+    box-shadow:var(--shadow);
+  }
+  .bling-col h3{
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin-bottom:10px;
+  }
+  .bling-col.pros{ border-top:3px solid var(--found); }
+  .bling-col.pros h3{ color:var(--found); }
+  .bling-col.cons{ border-top:3px solid var(--warn); }
+  .bling-col.cons h3{ color:var(--warn); }
+  .bling-col ul{ margin:0; padding-left:18px; display:flex; flex-direction:column; gap:8px; }
+  .bling-col li{ font-size:13.5px; line-height:1.5; }
+
+  @media (prefers-reduced-motion: no-preference){
+    .opt.sel{ animation: pulse .5s ease; }
+    @keyframes pulse{
+      0%{ background:var(--accent-soft); }
+      100%{ background:var(--found-soft); }
+    }
+  }
+</style>
+
+<header class="page">
+  <span class="eyebrow">Mavint · lançamento de despesas</span>
+  <h1>Simulador Mavint</h1>
+  <p>Reproduz os campos de categoria e subcategoria do sistema de vocês para simular, na prática, como fica lançar uma despesa em cada modelo.</p>
+</header>
+
+<div class="banner">
+  Isto é uma <b>simulação</b>, não o sistema real da Mavint — mas usa os mesmos 10 veículos, as mesmas categorias e as mesmas 32 subcategorias do plano de contas exportado em 21/09. Escolha um cenário abaixo e veja as duas listas lado a lado.
+</div>
+
+<div class="scenario-bar">
+  <label for="scenario">Cenário</label>
+  <select id="scenario"></select>
+  <span class="step-note" id="scenario-note"></span>
+</div>
+
+<div class="board">
+  <section class="panel" id="panel-a">
+    <div class="panel-head">
+      <span class="tag">Modelo A</span>
+      <h2>Veículo na subcategoria</h2>
+      <p>Como está hoje: a categoria continua sendo DESPESAS / RECEITAS, e cada veículo é uma subcategoria dentro dela.</p>
+    </div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="a-cat-search">Categoria <span class="count" id="a-cat-count"></span></label>
+        <div class="combo">
+          <input class="combo-search" id="a-cat-search" type="text" placeholder="Buscar categoria…" autocomplete="off">
+          <div class="combo-list short" id="a-cat-list" role="listbox"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="a-sub-search">Subcategoria <span class="count" id="a-sub-count"></span></label>
+        <div class="combo">
+          <input class="combo-search" id="a-sub-search" type="text" placeholder="Buscar subcategoria…" autocomplete="off">
+          <div class="combo-list" id="a-sub-list" role="listbox"></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel-foot">
+      <span>Nesta lista, pra achar 1 item:</span>
+      <span class="val" id="a-foot-val">—</span>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-b">
+    <div class="panel-head">
+      <span class="tag">Modelo B</span>
+      <h2>Veículo na categoria</h2>
+      <p>Proposta: cada veículo vira sua própria categoria (o "centro de custo"), e a subcategoria fica só com o tipo de gasto.</p>
+    </div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="b-cat-search">Categoria <span class="count" id="b-cat-count"></span></label>
+        <div class="combo">
+          <input class="combo-search" id="b-cat-search" type="text" placeholder="Buscar categoria…" autocomplete="off">
+          <div class="combo-list" id="b-cat-list" role="listbox"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="b-sub-search">Subcategoria <span class="count" id="b-sub-count"></span></label>
+        <div class="combo">
+          <input class="combo-search" id="b-sub-search" type="text" placeholder="Buscar subcategoria…" autocomplete="off">
+          <div class="combo-list short" id="b-sub-list" role="listbox"></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel-foot">
+      <span>Nesta lista, pra achar 1 item:</span>
+      <span class="val" id="b-foot-val">—</span>
+    </div>
+  </section>
+</div>
+
+<div class="verdict">
+  <div class="num" id="verdict-num">—<small>opções a menos pra procurar</small></div>
+  <p id="verdict-text"></p>
+</div>
+
+<section class="bling">
+  <header class="bling-head">
+    <span class="eyebrow">Espaço à parte · não entra no comparativo acima</span>
+    <h2>Bling: prós e contras</h2>
+    <p>Isto é sobre trocar de sistema inteiro pelo Bling — uma pergunta separada de qual estrutura (Modelo A ou B) usar dentro do sistema atual.</p>
+  </header>
+  <div class="bling-cols">
+    <div class="bling-col pros">
+      <h3>Prós</h3>
+      <ul>
+        <li>DRE automático por categoria, sem montar na mão</li>
+        <li>Conciliação bancária automática (a partir do plano Titânio)</li>
+        <li>Financeiro completo: contas a pagar/receber, fluxo de caixa, múltiplos usuários</li>
+        <li>Nota fiscal de serviço inclusa, em mais de 700 municípios</li>
+        <li>30 dias de teste grátis, sem fidelidade</li>
+      </ul>
+    </div>
+    <div class="bling-col cons">
+      <h3>Contras</h3>
+      <ul>
+        <li>Não emite CT-e sozinho — depende do LOG CT-e, integração paga à parte</li>
+        <li>Só junta vários CNPJs numa conta se forem matriz/filial da mesma raiz — falta confirmar se é o caso da Mavint</li>
+        <li>Sem centro de custo nativo — segmenta só por categoria, igual ao sistema atual (a mesma escolha Modelo A × B valeria lá dentro também)</li>
+        <li>Custo mensal novo que hoje não existe (a partir de R$ 96/mês, mais o LOG CT-e)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer class="note">
+  Dados: plano de contas exportado do sistema em 21/09/26 e regras ditas pela Vivi na reunião de 18/09/26. A lista de "DESPESAS que não são de veículo" no Modelo B só fica pequena (32 itens) porque hoje esses 32 já não têm veículo nenhum — se o sistema não deixar reaproveitar o mesmo nome de subcategoria (ex.: "Combustível") em várias categorias, o Modelo B pode exigir mais cadastros iniciais; isso está marcado como teste na planilha.
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var VEICULOS = ["Uno","Fiorino Guaramirim","Fiat","Strada Joinville","Iveco","Kia","Strada Mavint","Etios","Fiorino Mavint","MOB"];
+  var TIPOS_GASTO = ["Combustível","Manutenção","Licenciamento","Seguro","Multa"];
+  var COMUM_DESPESAS = [
+    "Motoboy Disauto Guaramirim","Motoboy Disauto Joinville",
+    "Seguro Motoboy — Disauto Guaramirim","Seguro Motoboy — Disauto Joinville","Seguro Motoboy — Pegasus",
+    "Imposto MEI — Pegasus","Imposto MEI — Disauto Joinville","Imposto MEI — Disauto Guaramirim","Imposto MEI — Mavinte",
+    "Impostos — Ildomar","Impostos — Manalu","Impostos — Mavinte"
+  ];
+  var REAPROVEITADAS = ["MOTOBOY","MOTOBOY PEGASUS"];
+  var EXISTENTES_18 = [
+    "ADIANTAMENTO FUNCIONARIOS","AJUDANTE","APLICAÇÃO","BRINDES","DESPESA RH","DIRETORIA","FINANCIAMENTOS",
+    "FOLHA DE PGTO","FROTA AQUISIÇÃO","IMPOSTO SOBRE FOLHA","MATERIAL DE EXPEDIENTE","MOTORISTA","OLEO MOTOBOY",
+    "OUTRAS SAIDAS","RESCISÃO CONTRATO TRABALHISTA","SINDICATOS","TERCEIROS","TI e TELECOMUNICAÇÃO"
+  ];
+
+  function frotaA(){
+    var out=[];
+    VEICULOS.forEach(function(v){ TIPOS_GASTO.forEach(function(t){ out.push(t+" — "+v); }); });
+    return out;
+  }
+  var DESPESAS_SUB_A = frotaA().concat(COMUM_DESPESAS, REAPROVEITADAS, EXISTENTES_18); // 82
+  var RECEITAS_SUB_A = VEICULOS.map(function(v){ return "Faturamento — "+v; }).concat(["OUTRAS ENTRADAS"]); // 11
+  var TRANSF_SUB = ["Transferência entre Contas"];
+
+  var CATEGORIAS_A = ["DESPESAS","RECEITAS","Transferência"];
+  function subcatsA(cat){
+    if(cat==="DESPESAS") return DESPESAS_SUB_A;
+    if(cat==="RECEITAS") return RECEITAS_SUB_A;
+    if(cat==="Transferência") return TRANSF_SUB;
+    return [];
+  }
+
+  var DESPESAS_SUB_B = COMUM_DESPESAS.concat(REAPROVEITADAS, EXISTENTES_18); // 32
+  var CATEGORIAS_B = ["DESPESAS","RECEITAS","Transferência"]
+    .concat(VEICULOS.map(function(v){ return "Despesa — "+v; }))
+    .concat(VEICULOS.map(function(v){ return "Receita — "+v; })); // 23
+  function subcatsB(cat){
+    if(cat==="DESPESAS") return DESPESAS_SUB_B;
+    if(cat==="RECEITAS") return ["OUTRAS ENTRADAS"];
+    if(cat==="Transferência") return TRANSF_SUB;
+    if(cat.indexOf("Despesa — ")===0) return TIPOS_GASTO.slice();
+    if(cat.indexOf("Receita — ")===0) return ["Faturamento"];
+    return [];
+  }
+
+  var SCENARIOS = [
+    { label:"Abastecer o Fiorino Guaramirim", note:"despesa de frota — combustível",
+      a:{cat:"DESPESAS", sub:"Combustível — Fiorino Guaramirim"},
+      b:{cat:"Despesa — Fiorino Guaramirim", sub:"Combustível"} },
+    { label:"Pagar o seguro do Etios", note:"despesa de frota — seguro",
+      a:{cat:"DESPESAS", sub:"Seguro — Etios"},
+      b:{cat:"Despesa — Etios", sub:"Seguro"} },
+    { label:"Motoboy Disauto Joinville (não é de veículo)", note:"despesa comum, sem veículo",
+      a:{cat:"DESPESAS", sub:"Motoboy Disauto Joinville"},
+      b:{cat:"DESPESAS", sub:"Motoboy Disauto Joinville"} },
+    { label:"Faturamento do Strada Mavint", note:"receita de frota",
+      a:{cat:"RECEITAS", sub:"Faturamento — Strada Mavint"},
+      b:{cat:"Receita — Strada Mavint", sub:"Faturamento"} },
+    { label:"TI e Telecomunicação (despesa administrativa)", note:"despesa comum, sem veículo",
+      a:{cat:"DESPESAS", sub:"TI e TELECOMUNICAÇÃO"},
+      b:{cat:"DESPESAS", sub:"TI e TELECOMUNICAÇÃO"} }
+  ];
+
+  function stripAccents(s){
+    return s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+  }
+
+  function makeColumn(prefix, categorias, subResolver){
+    var el = {
+      catSearch: document.getElementById(prefix+"-cat-search"),
+      catList: document.getElementById(prefix+"-cat-list"),
+      catCount: document.getElementById(prefix+"-cat-count"),
+      subSearch: document.getElementById(prefix+"-sub-search"),
+      subList: document.getElementById(prefix+"-sub-list"),
+      subCount: document.getElementById(prefix+"-sub-count"),
+      footVal: document.getElementById(prefix+"-foot-val")
+    };
+    var state = { cat:null, sub:null };
+
+    function renderList(listEl, countEl, items, query, selected, onPick, emptyMsg){
+      var q = stripAccents(query||"");
+      var filtered = q ? items.filter(function(it){ return stripAccents(it).indexOf(q)>=0; }) : items.slice();
+      listEl.innerHTML = "";
+      if(filtered.length===0){
+        var e = document.createElement("div");
+        e.className = "opt empty";
+        e.textContent = emptyMsg;
+        listEl.appendChild(e);
+      } else {
+        filtered.forEach(function(it){
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "opt" + (it===selected ? " sel" : "");
+          b.setAttribute("role","option");
+          b.textContent = it;
+          b.addEventListener("click", function(){ onPick(it); });
+          listEl.appendChild(b);
+        });
+      }
+      if(countEl){
+        var full = items.length;
+        if(q && filtered.length!==full){
+          countEl.textContent = filtered.length+" de "+full;
+          countEl.className = "count " + (full>15 ? "big" : "small");
+        } else {
+          countEl.textContent = full+" opç" + (full===1?"ão":"ões");
+          countEl.className = "count " + (full>15 ? "big" : (full<=6 ? "small" : ""));
+        }
+      }
+      if(selected){
+        var sel = listEl.querySelector(".opt.sel");
+        if(sel) sel.scrollIntoView({block:"nearest"});
+      }
+    }
+
+    function renderCats(){
+      renderList(el.catList, el.catCount, categorias, el.catSearch.value, state.cat, function(v){
+        state.cat = v;
+        state.sub = null;
+        el.subSearch.value = "";
+        renderCats();
+        renderSubs();
+      }, "Nenhuma categoria encontrada.");
+    }
+
+    function renderSubs(){
+      var items = state.cat ? subResolver(state.cat) : [];
+      renderList(el.subList, el.subCount, items, el.subSearch.value, state.sub, function(v){
+        state.sub = v;
+        renderSubs();
+        updateFoot();
+      }, state.cat ? "Nenhuma subcategoria encontrada." : "Escolha a categoria primeiro.");
+      updateFoot();
+    }
+
+    function updateFoot(){
+      var items = state.cat ? subResolver(state.cat) : [];
+      el.footVal.textContent = state.cat ? (items.length+" itens na lista") : "—";
+    }
+
+    el.catSearch.addEventListener("input", renderCats);
+    el.subSearch.addEventListener("input", renderSubs);
+
+    return {
+      set: function(cat, sub){
+        state.cat = cat;
+        el.catSearch.value = "";
+        renderCats();
+        state.sub = sub;
+        el.subSearch.value = "";
+        renderSubs();
+      },
+      subCount: function(){
+        var items = state.cat ? subResolver(state.cat) : 0;
+        return state.cat ? subResolver(state.cat).length : 0;
+      },
+      render: function(){ renderCats(); renderSubs(); }
+    };
+  }
+
+  var colA = makeColumn("a", CATEGORIAS_A, subcatsA);
+  var colB = makeColumn("b", CATEGORIAS_B, subcatsB);
+
+  var scenarioSel = document.getElementById("scenario");
+  var scenarioNote = document.getElementById("scenario-note");
+  var verdictNum = document.getElementById("verdict-num");
+  var verdictText = document.getElementById("verdict-text");
+
+  SCENARIOS.forEach(function(s, i){
+    var o = document.createElement("option");
+    o.value = i;
+    o.textContent = s.label;
+    scenarioSel.appendChild(o);
+  });
+
+  function applyScenario(i){
+    var s = SCENARIOS[i];
+    scenarioNote.textContent = s.note;
+    colA.set(s.a.cat, s.a.sub);
+    colB.set(s.b.cat, s.b.sub);
+    var na = subcatsA(s.a.cat).length;
+    var nb = subcatsB(s.b.cat).length;
+    var diff = na - nb;
+    if(diff>0){
+      verdictNum.innerHTML = "-"+diff+"<small>opções a menos pra procurar no Modelo B</small>";
+      verdictText.innerHTML = "Pra lançar <b>\""+s.label+"\"</b>: no Modelo A a subcategoria está entre <b>"+na+"</b> opções; no Modelo B, entre <b>"+nb+"</b>.";
+    } else {
+      verdictNum.innerHTML = "=<small>mesma quantidade nos dois</small>";
+      verdictText.innerHTML = "Pra lançar <b>\""+s.label+"\"</b>: como não é uma despesa de veículo, as duas listas têm <b>"+nb+"</b> opções — aqui o Modelo B não muda nada.";
+    }
+  }
+
+  scenarioSel.addEventListener("change", function(){ applyScenario(Number(scenarioSel.value)); });
+
+  applyScenario(0);
+})();
+</script>
